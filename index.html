@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>English Coach — Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f0f4ff;
+      --sidebar-bg: #1a1f36;
+      --sidebar-w: 220px;
+      --blue: #4361ee;
+      --green: #2dc653;
+      --yellow: #f9c846;
+      --red: #e63946;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+    }
+    body { background: var(--bg); font-family: 'Segoe UI', Arial, sans-serif; color: var(--text); display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); display: flex; flex-direction: column; padding: 20px 0; position: fixed; top: 0; bottom: 0; left: 0; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 18px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .sidebar-logo img { width: 36px; height: 36px; border-radius: 10px; }
+    .sidebar-logo span { color: #fff; font-weight: 800; font-size: 1.05rem; }
+    .demo-pill { background: #4361ee33; color: #7b9eff; border-radius: 6px; padding: 1px 8px; font-size: .7rem; font-weight: 700; margin-left: 4px; }
+    .nav-items { padding: 16px 10px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: rgba(255,255,255,.6); font-size: .9rem; font-weight: 600; cursor: pointer; transition: all .15s; position: relative; }
+    .nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+    .nav-item.active { background: var(--blue); color: #fff; }
+    .nav-item .badge { background: var(--red); color: #fff; border-radius: 999px; padding: 1px 7px; font-size: .72rem; font-weight: 700; margin-left: auto; }
+    .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+    .sidebar-stats { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,.08); display: flex; gap: 16px; }
+    .stat-pill { display: flex; align-items: center; gap: 5px; color: rgba(255,255,255,.7); font-size: .82rem; font-weight: 600; }
+    .stat-pill span { color: #fff; font-weight: 800; }
+
+    /* MAIN */
+    .main { margin-left: var(--sidebar-w); flex: 1; padding: 32px; max-width: 900px; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .page-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+    .page-sub { color: var(--muted); font-size: .9rem; margin-bottom: 24px; }
+
+    /* CARDS */
+    .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 1px 8px rgba(0,0,0,.06); border: 1px solid var(--border); margin-bottom: 20px; }
+    .card-sm { background: var(--card); border-radius: 12px; padding: 16px; box-shadow: 0 1px 6px rgba(0,0,0,.05); border: 1px solid var(--border); }
+
+    /* PHASE BANNER */
+    .phase-banner { background: linear-gradient(135deg, #4361ee, #7b2fff); border-radius: 16px; padding: 24px; color: #fff; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .phase-banner h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
+    .phase-banner p { opacity: .85; font-size: .88rem; }
+    .btn-review { background: rgba(255,255,255,.2); border: none; color: #fff; border-radius: 10px; padding: 9px 20px; font-weight: 700; cursor: pointer; font-size: .9rem; }
+    .btn-review:hover { background: rgba(255,255,255,.3); }
+
+    /* UNITS */
+    .units-path { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 8px 0; }
+    .unit-node { width: 80px; height: 80px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.6rem; cursor: pointer; transition: transform .15s; border: 4px solid transparent; }
+    .unit-node:hover { transform: scale(1.08); }
+    .unit-node.done { background: var(--green); border-color: #20a845; }
+    .unit-node.active { background: var(--blue); border-color: #2345cc; box-shadow: 0 0 0 6px rgba(67,97,238,.2); }
+    .unit-node.locked { background: #e2e8f0; border-color: #cbd5e1; }
+    .unit-label { font-size: .78rem; font-weight: 700; text-align: center; margin-top: 6px; color: var(--muted); }
+
+    /* PROGRESS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-box { text-align: center; }
+    .stat-box .val { font-size: 2.2rem; font-weight: 800; color: var(--blue); }
+    .stat-box .lbl { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+    .progress-bar { background: #e2e8f0; border-radius: 999px; height: 10px; overflow: hidden; margin: 8px 0; }
+    .progress-fill { height: 100%; border-radius: 999px; background: var(--blue); }
+    .badge-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+    .badge-item { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 80px; }
+    .badge-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+    .badge-icon.earned { background: #fef9c3; }
+    .badge-icon.locked { background: #f1f5f9; filter: grayscale(1) opacity(.4); }
+    .badge-label { font-size: .72rem; font-weight: 700; text-align: center; color: var(--muted); }
+
+    /* WRITING */
+    .question-box { background: #f8faff; border: 2px solid var(--blue); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+    .question-box p { font-size: 1rem; line-height: 1.6; color: var(--text); }
+    .answer-area { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; font-size: .95rem; font-family: inherit; resize: vertical; min-height: 120px; background: #fff; }
+    .answer-area:focus { outline: none; border-color: var(--blue); }
+    .btn-primary { background: var(--blue); color: #fff; border: none; border-radius: 10px; padding: 11px 28px; font-weight: 700; cursor: pointer; font-size: .95rem; margin-top: 12px; }
+    .btn-primary:hover { background: #2345cc; }
+    .ai-feedback { background: #f0fff4; border: 1.5px solid var(--green); border-radius: 14px; padding: 18px; margin-top: 16px; display: none; }
+    .ai-feedback.visible { display: block; }
+    .ai-label { display: flex; align-items: center; gap: 8px; font-weight: 800; color: #166534; margin-bottom: 10px; font-size: .9rem; }
+    .ai-score { background: var(--green); color: #fff; border-radius: 8px; padding: 2px 10px; font-size: .82rem; font-weight: 700; }
+
+    /* MISTAKES */
+    .mistake-item { border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .mistake-text { flex: 1; }
+    .mistake-original { font-size: .88rem; color: var(--red); text-decoration: line-through; margin-bottom: 4px; }
+    .mistake-correct { font-size: .95rem; font-weight: 700; color: #166534; }
+    .mistake-tag { background: #fee2e2; color: var(--red); border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+
+    /* CONVERSATION */
+    .chat-box { background: #f8faff; border-radius: 14px; padding: 16px; height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+    .msg { max-width: 75%; }
+    .msg.ai { align-self: flex-start; }
+    .msg.user { align-self: flex-end; }
+    .msg-bubble { padding: 12px 16px; border-radius: 14px; font-size: .92rem; line-height: 1.5; }
+    .msg.ai .msg-bubble { background: #fff; border: 1px solid var(--border); border-radius: 4px 14px 14px 14px; }
+    .msg.user .msg-bubble { background: var(--blue); color: #fff; border-radius: 14px 4px 14px 14px; }
+    .msg-label { font-size: .72rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+    .chat-input-row { display: flex; gap: 10px; }
+    .chat-input { flex: 1; border: 1.5px solid var(--border); border-radius: 10px; padding: 11px 14px; font-size: .95rem; font-family: inherit; }
+    .chat-input:focus { outline: none; border-color: var(--blue); }
+    .btn-send { background: var(--blue); color: #fff; border: none; border-radius: 10px; padding: 11px 20px; font-weight: 700; cursor: pointer; }
+
+    /* VOICE CALL */
+    .call-card { text-align: center; padding: 40px 24px; }
+    .call-avatar { width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg,#4361ee,#7b2fff); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 16px; box-shadow: 0 0 0 12px rgba(67,97,238,.1); }
+    .call-status { font-size: .88rem; color: var(--muted); margin-bottom: 24px; }
+    .call-script { background: #f8faff; border-radius: 12px; padding: 16px; text-align: left; margin-bottom: 20px; }
+    .call-script p { font-size: .9rem; line-height: 1.6; color: var(--text); }
+    .call-btn { width: 64px; height: 64px; border-radius: 50%; border: none; font-size: 1.6rem; cursor: pointer; }
+    .call-btn.end { background: var(--red); color: #fff; }
+    .call-btn.mic { background: var(--green); color: #fff; }
+
+    /* LEVEL TEST */
+    .quiz-progress { background: #e2e8f0; border-radius: 999px; height: 8px; margin-bottom: 24px; }
+    .quiz-fill { height: 100%; border-radius: 999px; background: var(--blue); transition: width .3s; }
+    .quiz-q { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; line-height: 1.5; }
+    .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+    .quiz-opt { background: #f8faff; border: 2px solid var(--border); border-radius: 12px; padding: 14px 18px; cursor: pointer; font-size: .95rem; font-weight: 500; transition: all .15s; text-align: left; }
+    .quiz-opt:hover { border-color: var(--blue); background: #eff3ff; }
+    .quiz-opt.correct { background: #f0fff4; border-color: var(--green); color: #166534; }
+    .quiz-opt.wrong { background: #fff1f2; border-color: var(--red); color: var(--red); }
+
+    /* HISTORY */
+    .history-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .history-item:last-child { border-bottom: none; }
+    .history-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+    .history-info { flex: 1; }
+    .history-title { font-weight: 700; font-size: .92rem; }
+    .history-sub { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+    .history-xp { font-weight: 800; color: var(--blue); font-size: .88rem; white-space: nowrap; }
+
+    /* LIBRARY */
+    .book-card { display: flex; gap: 16px; align-items: flex-start; }
+    .book-cover { width: 80px; height: 110px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0; }
+    .book-info h3 { font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
+    .book-info p { font-size: .82rem; color: var(--muted); margin-bottom: 10px; }
+    .reading-area { background: #fffef7; border: 1.5px solid #f9c846; border-radius: 12px; padding: 20px; margin-bottom: 16px; line-height: 1.8; font-size: .95rem; color: var(--text); }
+    .reading-area .highlight-word { background: #fef9c3; border-radius: 4px; padding: 0 2px; }
+    .tts-controls { display: flex; gap: 10px; align-items: center; }
+    .btn-tts { background: var(--yellow); border: none; border-radius: 10px; padding: 10px 20px; font-weight: 700; cursor: pointer; font-size: .9rem; display: flex; align-items: center; gap: 6px; }
+    .btn-tts:hover { background: #e6b800; }
+    .btn-tts-stop { background: #fee2e2; color: var(--red); border: none; border-radius: 10px; padding: 10px 20px; font-weight: 700; cursor: pointer; font-size: .9rem; display: none; }
+
+    /* LOCAL AI */
+    .ai-chat-box { background: #f8faff; border-radius: 14px; padding: 16px; height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+
+    /* TOAST */
+    .toast-demo { position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: #fff; border-radius: 12px; padding: 12px 20px; font-size: .88rem; font-weight: 600; display: none; z-index: 999; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+    .toast-demo.show { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4361ee,#7b2fff);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🐶</div>
+    <span>English Coach <span class="demo-pill">DEMO</span></span>
+  </div>
+  <div class="nav-items">
+    <div class="nav-item active" onclick="nav('learn')"><span class="nav-icon">📚</span> Learn</div>
+    <div class="nav-item" onclick="nav('mistakes')"><span class="nav-icon">🔴</span> Mistakes <span class="badge">33</span></div>
+    <div class="nav-item" onclick="nav('writing')"><span class="nav-icon">✍️</span> Writing</div>
+    <div class="nav-item" onclick="nav('conversation')"><span class="nav-icon">💬</span> Conversation</div>
+    <div class="nav-item" onclick="nav('voice')"><span class="nav-icon">📞</span> Voice Call</div>
+    <div class="nav-item" onclick="nav('local-ai')"><span class="nav-icon">🤖</span> Local AI</div>
+    <div class="nav-item" onclick="nav('library')"><span class="nav-icon">📖</span> Library</div>
+    <div class="nav-item" onclick="nav('progress')"><span class="nav-icon">📊</span> Progress</div>
+    <div class="nav-item" onclick="nav('level-test')"><span class="nav-icon">🎯</span> Level Test</div>
+    <div class="nav-item" onclick="nav('history')"><span class="nav-icon">🕐</span> History</div>
+  </div>
+  <div class="sidebar-stats">
+    <div class="stat-pill">🔥 <span>1</span> day</div>
+    <div class="stat-pill">⭐ <span>522</span> XP</div>
+  </div>
+</aside>
+
+<main class="main">
+
+  <!-- LEARN -->
+  <div id="sec-learn" class="section active">
+    <div class="phase-banner">
+      <div>
+        <div style="font-size:.8rem;opacity:.8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Phase 4 of 4</div>
+        <h2>Confident Communicator</h2>
+        <p>19 of 25 units completed</p>
+      </div>
+      <button class="btn-review">⚡ Quick Review</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div style="background:#f0fff4;border-radius:12px;padding:14px;text-align:center;border:1.5px solid #bbf7d0;">
+        <div style="font-size:1.5rem;">📘</div>
+        <div style="font-size:.82rem;font-weight:700;color:#166534;margin-top:4px;">Phase 1</div>
+        <div style="font-size:.75rem;color:#64748b;">Support Foundations</div>
+        <div style="font-size:.75rem;color:#2dc653;font-weight:700;margin-top:4px;">✓ Complete</div>
+      </div>
+      <div style="background:#f0fff4;border-radius:12px;padding:14px;text-align:center;border:1.5px solid #bbf7d0;">
+        <div style="font-size:1.5rem;">📗</div>
+        <div style="font-size:.82rem;font-weight:700;color:#166534;margin-top:4px;">Phase 2</div>
+        <div style="font-size:.75rem;color:#64748b;">Technical Language</div>
+        <div style="font-size:.75rem;color:#2dc653;font-weight:700;margin-top:4px;">✓ Complete</div>
+      </div>
+      <div style="background:#f0fff4;border-radius:12px;padding:14px;text-align:center;border:1.5px solid #bbf7d0;">
+        <div style="font-size:1.5rem;">📙</div>
+        <div style="font-size:.82rem;font-weight:700;color:#166534;margin-top:4px;">Phase 3</div>
+        <div style="font-size:.75rem;color:#64748b;">ERP Integration Talk</div>
+        <div style="font-size:.75rem;color:#2dc653;font-weight:700;margin-top:4px;">✓ Complete</div>
+      </div>
+    </div>
+    <div class="card" style="padding:20px 24px;">
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4361ee;margin-bottom:12px;">Phase 4 — In Progress</div>
+      <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:4px;">Confident Communicator</h3>
+      <p style="font-size:.85rem;color:#64748b;margin-bottom:20px;">Build confidence to lead technical calls and present findings clearly.</p>
+      <div class="units-path">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="unit-node done" onclick="showToast('Unit complete! Practice again anytime.')">✓</div>
+          <div class="unit-label">Support Basics</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="unit-node done" onclick="showToast('Unit complete! Practice again anytime.')">✓</div>
+          <div class="unit-label">Guided Reading</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="unit-node active" onclick="nav('writing')">✍️</div>
+          <div class="unit-label" style="color:#4361ee;">Writing Practice</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="unit-node locked">🔒</div>
+          <div class="unit-label">Conversation</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="unit-node locked">🔒</div>
+          <div class="unit-label">Final Review</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MISTAKES -->
+  <div id="sec-mistakes" class="section">
+    <div class="page-title">Mistakes</div>
+    <div class="page-sub">Review and fix your recent errors — 33 pending</div>
+    <div class="card">
+      <div class="mistake-item">
+        <div class="mistake-text">
+          <div class="mistake-original">The issue are related to the configuration.</div>
+          <div class="mistake-correct">The issue <strong>is</strong> related to the configuration.</div>
+          <div style="font-size:.8rem;color:#64748b;margin-top:4px;">Subject-verb agreement</div>
+        </div>
+        <span class="mistake-tag">Grammar</span>
+      </div>
+      <div class="mistake-item">
+        <div class="mistake-text">
+          <div class="mistake-original">I will investigate about this problem.</div>
+          <div class="mistake-correct">I will investigate <strong>this</strong> problem.</div>
+          <div style="font-size:.8rem;color:#64748b;margin-top:4px;">Preposition misuse</div>
+        </div>
+        <span class="mistake-tag">Grammar</span>
+      </div>
+      <div class="mistake-item">
+        <div class="mistake-text">
+          <div class="mistake-original">Please advice me when the fix is deployed.</div>
+          <div class="mistake-correct">Please <strong>advise</strong> me when the fix is deployed.</div>
+          <div style="font-size:.8rem;color:#64748b;margin-top:4px;">Confusable words: advise vs advice</div>
+        </div>
+        <span class="mistake-tag">Vocabulary</span>
+      </div>
+      <div class="mistake-item">
+        <div class="mistake-text">
+          <div class="mistake-original">The system doesn't works in this environment.</div>
+          <div class="mistake-correct">The system doesn't <strong>work</strong> in this environment.</div>
+          <div style="font-size:.8rem;color:#64748b;margin-top:4px;">Double verb conjugation</div>
+        </div>
+        <span class="mistake-tag">Grammar</span>
+      </div>
+      <div class="mistake-item">
+        <div class="mistake-text">
+          <div class="mistake-original">I need more informations to proceed.</div>
+          <div class="mistake-correct">I need more <strong>information</strong> to proceed.</div>
+          <div style="font-size:.8rem;color:#64748b;margin-top:4px;">Uncountable noun</div>
+        </div>
+        <span class="mistake-tag">Grammar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WRITING -->
+  <div id="sec-writing" class="section">
+    <div class="page-title">Writing Practice</div>
+    <div class="page-sub">Answer the question below. AI will review your response.</div>
+    <div class="card">
+      <div class="question-box">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:#4361ee;margin-bottom:8px;">Technical Support Scenario</div>
+        <p>A customer reports that their expense report is stuck in <strong>POSTING_CONFIRMED_FAILURE</strong> status after a system update. Write a professional email response explaining next steps and requesting the necessary information to investigate.</p>
+      </div>
+      <textarea class="answer-area" id="writing-answer" placeholder="Type your answer here...">Dear [Customer Name],
+
+Thank you for reaching out to us regarding the issue with your expense report.
+
+I understand that your report is currently showing a POSTING_CONFIRMED_FAILURE status following the recent system update. I apologize for the inconvenience this may have caused.
+
+To investigate this further, could you please provide the following information:
+- The report ID and submission date
+- The ERP System ID associated with your entity
+- Any error codes visible in the document details
+
+Once I receive this information, I will prioritize the investigation and keep you updated on our progress.
+
+Best regards,
+Support Team</textarea>
+      <button class="btn-primary" onclick="showAIFeedback()">✨ Get AI Feedback</button>
+      <div class="ai-feedback" id="ai-feedback">
+        <div class="ai-label">🤖 Gemini AI Feedback <span class="ai-score">Score: 91/100</span></div>
+        <p style="font-size:.9rem;line-height:1.65;color:#1e293b;margin-bottom:12px;">
+          <strong>Excellent response!</strong> Your email is professional, empathetic, and well-structured. You correctly identified the key information needed for the investigation.
+        </p>
+        <p style="font-size:.88rem;color:#166534;margin-bottom:8px;"><strong>✅ Strengths:</strong></p>
+        <ul style="font-size:.87rem;color:#1e293b;line-height:1.7;padding-left:20px;margin-bottom:12px;">
+          <li>Clear and professional tone throughout</li>
+          <li>Correctly requested the Report ID and ERP System ID</li>
+          <li>Good use of technical terminology (POSTING_CONFIRMED_FAILURE)</li>
+          <li>Empathetic opening acknowledging the inconvenience</li>
+        </ul>
+        <p style="font-size:.88rem;color:#854d0e;margin-bottom:8px;"><strong>💡 Suggestion:</strong></p>
+        <p style="font-size:.87rem;color:#1e293b;line-height:1.65;">Consider adding an estimated response time (e.g., "within 24 business hours") to set clear expectations for the customer.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONVERSATION -->
+  <div id="sec-conversation" class="section">
+    <div class="page-title">Conversation Practice</div>
+    <div class="page-sub">Practice a support call scenario with AI</div>
+    <div class="card">
+      <div style="background:#f0f4ff;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:.85rem;color:#4361ee;font-weight:600;">
+        📋 Scenario: A customer is asking about a failed journal posting. Guide them through the troubleshooting steps.
+      </div>
+      <div class="chat-box" id="conv-box">
+        <div class="msg ai"><div class="msg-label">🤖 AI Customer</div><div class="msg-bubble">Hello, I'm calling because our expense report posting failed again. The status shows POSTING_CONFIRMED_FAILURE. This is the third time this week. Can you help?</div></div>
+        <div class="msg user"><div class="msg-label">You</div><div class="msg-bubble">Hello! I'm sorry to hear that. I'll be happy to help investigate this. Could you please provide me with the report ID and the ERP System ID so I can look into the details?</div></div>
+        <div class="msg ai"><div class="msg-label">🤖 AI Customer</div><div class="msg-bubble">Sure. The report ID is RPT-2026-0047 and the ERP System ID is S4PCLNT100.</div></div>
+        <div class="msg user"><div class="msg-label">You</div><div class="msg-bubble">Thank you. I can see the document here. It looks like there's a mapping issue with the cost center configuration. I'll escalate this to our ERP team and send you an update within 2 business hours.</div></div>
+        <div class="msg ai"><div class="msg-label">🤖 AI Customer</div><div class="msg-bubble">Thank you. How will I know when it's fixed? Will I receive an email notification?</div></div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="conv-input" placeholder="Type your response..." onkeydown="if(event.key==='Enter')sendConv()" />
+        <button class="btn-send" onclick="sendConv()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOICE CALL -->
+  <div id="sec-voice" class="section">
+    <div class="page-title">Voice Call</div>
+    <div class="page-sub">Practice spoken English in a simulated support call</div>
+    <div class="card call-card">
+      <div class="call-avatar">👤</div>
+      <h3 style="font-weight:800;margin-bottom:4px;">Customer: James Wilson</h3>
+      <div class="call-status" id="call-status">🟢 Call in progress — 02:34</div>
+      <div class="call-script">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Current prompt:</div>
+        <p id="call-prompt">"I submitted an expense report two days ago and it's still showing as pending. My manager is asking me about it. Can you check the status for me?"</p>
+      </div>
+      <div style="font-size:.82rem;color:#64748b;margin-bottom:16px;font-style:italic;">Suggested response: Ask for the report ID and confirm the employee's entity to look up the document in the system.</div>
+      <div style="display:flex;justify-content:center;gap:20px;">
+        <button class="call-btn mic" onclick="showToast('Microphone simulated in demo mode.')">🎤</button>
+        <button class="call-btn end" onclick="showToast('Call ended. Great practice!')">📵</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOCAL AI -->
+  <div id="sec-local-ai" class="section">
+    <div class="page-title">Local AI Assistant</div>
+    <div class="page-sub">Ask anything about English, grammar, or technical writing</div>
+    <div class="card">
+      <div class="ai-chat-box" id="ai-box">
+        <div class="msg ai"><div class="msg-label">🤖 Local AI (Gemini)</div><div class="msg-bubble">Hello! I'm your English Coach AI. I can help you with grammar questions, writing tips, technical vocabulary, or anything else you need to improve your professional English. What would you like to work on today?</div></div>
+        <div class="msg user"><div class="msg-label">You</div><div class="msg-bubble">What's the difference between "affect" and "effect"?</div></div>
+        <div class="msg ai"><div class="msg-label">🤖 Local AI (Gemini)</div><div class="msg-bubble"><strong>Affect</strong> is usually a verb meaning to influence something.<br><em>Example: "The configuration change affected the posting flow."</em><br><br><strong>Effect</strong> is usually a noun meaning the result or outcome.<br><em>Example: "The effect of the change was visible in the logs."</em><br><br>💡 <strong>Memory tip:</strong> "Affect" = Action (verb). "Effect" = End result (noun).</div></div>
+        <div class="msg user"><div class="msg-label">You</div><div class="msg-bubble">How do I politely ask a customer for more information?</div></div>
+        <div class="msg ai"><div class="msg-label">🤖 Local AI (Gemini)</div><div class="msg-bubble">Here are some professional phrases:<br><br>• "Could you please provide the report ID so I can look into this?"<br>• "To better assist you, I'll need a few more details."<br>• "Would you mind sharing the error message you received?"<br>• "I'd like to investigate further — could you confirm the entity ID?"<br><br>These phrases are polite, professional, and show the customer you're actively working on their issue.</div></div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="ai-input" placeholder="Ask me anything about English..." onkeydown="if(event.key==='Enter')sendAI()" />
+        <button class="btn-send" onclick="sendAI()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIBRARY -->
+  <div id="sec-library" class="section">
+    <div class="page-title">Library</div>
+    <div class="page-sub">Read and listen to texts focused on technical English</div>
+    <div class="card">
+      <div class="book-card mb-4" style="margin-bottom:20px;">
+        <div class="book-cover" style="background:linear-gradient(135deg,#4361ee,#7b2fff);">📘</div>
+        <div class="book-info">
+          <h3>Professional Email Writing</h3>
+          <p>Technical Support Edition · Chapter 3</p>
+          <div style="font-size:.8rem;color:#64748b;">Estimated reading time: 4 min · Intermediate</div>
+        </div>
+      </div>
+      <div class="reading-area" id="reading-text">
+        <p style="margin-bottom:12px;">When responding to a customer reporting a <span class="highlight-word" id="w1">failed</span> posting, it is essential to begin with an <span class="highlight-word" id="w2">acknowledgment</span> of their concern. A professional response should always include three key elements: empathy, clarity, and a clear <span class="highlight-word" id="w3">next step</span>.</p>
+        <p style="margin-bottom:12px;">Begin by confirming that you have <span class="highlight-word" id="w4">received</span> their report and that you understand the <span class="highlight-word" id="w5">urgency</span> of the situation. Then, request the minimum necessary information to begin your <span class="highlight-word" id="w6">investigation</span>.</p>
+        <p>Finally, commit to a specific <span class="highlight-word" id="w7">timeline</span> for your follow-up. This builds trust and reduces <span class="highlight-word" id="w8">anxiety</span> for the customer while you work on a <span class="highlight-word" id="w9">resolution</span>.</p>
+      </div>
+      <div class="tts-controls">
+        <button class="btn-tts" id="btn-play" onclick="startTTS()">🔊 Read aloud</button>
+        <button class="btn-tts-stop" id="btn-stop" onclick="stopTTS()">⏹ Stop</button>
+        <span style="font-size:.82rem;color:#64748b;margin-left:8px;" id="tts-status"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="sec-progress" class="section">
+    <div class="page-title">Progress</div>
+    <div class="page-sub">Your learning journey so far</div>
+    <div class="stats-grid">
+      <div class="card-sm stat-box"><div class="val">🔥 1</div><div class="lbl">Day streak</div></div>
+      <div class="card-sm stat-box"><div class="val">522</div><div class="lbl">Total XP</div></div>
+      <div class="card-sm stat-box"><div class="val">19</div><div class="lbl">Units completed</div></div>
+      <div class="card-sm stat-box"><div class="val">5/6</div><div class="lbl">Badges earned</div></div>
+    </div>
+    <div class="card" style="margin-bottom:20px;">
+      <div style="font-weight:800;margin-bottom:16px;">Phase Progress</div>
+      <div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:4px;"><span>Phase 1 — Support Foundations</span><span style="color:#2dc653;font-weight:700;">100%</span></div><div class="progress-bar"><div class="progress-fill" style="width:100%;background:#2dc653;"></div></div></div>
+      <div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:4px;"><span>Phase 2 — Technical Language</span><span style="color:#2dc653;font-weight:700;">100%</span></div><div class="progress-bar"><div class="progress-fill" style="width:100%;background:#2dc653;"></div></div></div>
+      <div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:4px;"><span>Phase 3 — ERP Integration Talk</span><span style="color:#2dc653;font-weight:700;">100%</span></div><div class="progress-bar"><div class="progress-fill" style="width:100%;background:#2dc653;"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:4px;"><span>Phase 4 — Confident Communicator</span><span style="color:#4361ee;font-weight:700;">76%</span></div><div class="progress-bar"><div class="progress-fill" style="width:76%;"></div></div></div>
+    </div>
+    <div class="card">
+      <div style="font-weight:800;margin-bottom:16px;">Achievements</div>
+      <div class="badge-grid">
+        <div class="badge-item"><div class="badge-icon earned">🥇</div><div class="badge-label">First Step</div></div>
+        <div class="badge-item"><div class="badge-icon earned">📝</div><div class="badge-label">Lesson Starter</div></div>
+        <div class="badge-item"><div class="badge-icon earned">✍️</div><div class="badge-label">Writing Starter</div></div>
+        <div class="badge-item"><div class="badge-icon earned">🔥</div><div class="badge-label">3-Day Streak</div></div>
+        <div class="badge-item"><div class="badge-icon earned">💬</div><div class="badge-label">Conversationalist</div></div>
+        <div class="badge-item"><div class="badge-icon locked">🏆</div><div class="badge-label">Phase Master</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL TEST -->
+  <div id="sec-level-test" class="section">
+    <div class="page-title">Level Test</div>
+    <div class="page-sub">A1–B2 diagnostic — 5 questions</div>
+    <div class="card">
+      <div class="quiz-progress"><div class="quiz-fill" id="quiz-bar" style="width:20%;"></div></div>
+      <div style="font-size:.82rem;color:#64748b;margin-bottom:16px;" id="quiz-counter">Question 1 of 5</div>
+      <div class="quiz-q" id="quiz-q">Choose the correct word: "I need to _____ this issue to the engineering team."</div>
+      <div class="quiz-options" id="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,false)">A) rise</button>
+        <button class="quiz-opt" onclick="answer(this,true)">B) escalate</button>
+        <button class="quiz-opt" onclick="answer(this,false)">C) raise up</button>
+        <button class="quiz-opt" onclick="answer(this,false)">D) elevate</button>
+      </div>
+      <div id="quiz-next" style="display:none;margin-top:16px;"><button class="btn-primary" onclick="nextQ()">Next →</button></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="sec-history" class="section">
+    <div class="page-title">History</div>
+    <div class="page-sub">Your recent activity</div>
+    <div class="card">
+      <div class="history-item"><div class="history-icon" style="background:#eff3ff;">✍️</div><div class="history-info"><div class="history-title">Writing Practice — Technical Email</div><div class="history-sub">Today · Score: 91/100</div></div><div class="history-xp">+30 XP</div></div>
+      <div class="history-item"><div class="history-icon" style="background:#f0fff4;">💬</div><div class="history-info"><div class="history-title">Conversation — Failed Posting Scenario</div><div class="history-sub">Today · 5 exchanges</div></div><div class="history-xp">+25 XP</div></div>
+      <div class="history-item"><div class="history-icon" style="background:#fef9c3;">📖</div><div class="history-info"><div class="history-title">Library — Professional Email Writing Ch.3</div><div class="history-sub">Yesterday · Read + listened</div></div><div class="history-xp">+15 XP</div></div>
+      <div class="history-item"><div class="history-icon" style="background:#fff1f2;">🔴</div><div class="history-info"><div class="history-title">Mistakes Review — Grammar session</div><div class="history-sub">Yesterday · 8 mistakes reviewed</div></div><div class="history-xp">+20 XP</div></div>
+      <div class="history-item"><div class="history-icon" style="background:#eff3ff;">📚</div><div class="history-info"><div class="history-title">Unit: Guided Reading</div><div class="history-sub">2 days ago · Completed</div></div><div class="history-xp">+40 XP</div></div>
+      <div class="history-item"><div class="history-icon" style="background:#f0fff4;">🎯</div><div class="history-info"><div class="history-title">Level Test — Intermediate</div><div class="history-sub">3 days ago · Score: 4/5</div></div><div class="history-xp">+50 XP</div></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast -->
+<div class="toast-demo" id="toast">Demo mode — this action is simulated.</div>
+
+<script>
+// Navigation
+function nav(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const items = document.querySelectorAll('.nav-item');
+  const map = { learn:0,mistakes:1,writing:2,conversation:3,voice:4,'local-ai':5,library:6,progress:7,'level-test':8,history:9 };
+  if (map[name] !== undefined) items[map[name]].classList.add('active');
+}
+
+// Toast
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg || 'Demo mode — this action is simulated.';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Writing AI feedback
+function showAIFeedback() {
+  document.getElementById('ai-feedback').classList.add('visible');
+  document.getElementById('ai-feedback').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// Conversation
+const convReplies = [
+  "Yes, I will receive an email notification when the issue is resolved, correct?",
+  "Thank you for clarifying. How long does a typical mapping issue take to fix?",
+  "I understand. Is there anything else you need from my end to speed up the process?",
+  "Great. I appreciate your help. I'll wait for your update."
+];
+let convCount = 0;
+function sendConv() {
+  const input = document.getElementById('conv-input');
+  const box = document.getElementById('conv-box');
+  if (!input.value.trim()) return;
+  box.innerHTML += `<div class="msg user"><div class="msg-label">You</div><div class="msg-bubble">${input.value}</div></div>`;
+  input.value = '';
+  if (convCount < convReplies.length) {
+    setTimeout(() => {
+      box.innerHTML += `<div class="msg ai"><div class="msg-label">🤖 AI Customer</div><div class="msg-bubble">${convReplies[convCount++]}</div></div>`;
+      box.scrollTop = box.scrollHeight;
+    }, 800);
+  } else {
+    setTimeout(() => {
+      box.innerHTML += `<div class="msg ai"><div class="msg-label">🤖 AI Customer</div><div class="msg-bubble">Thank you so much for your help today. You've been very professional and clear. I'll wait for the update!</div></div>`;
+      box.scrollTop = box.scrollHeight;
+    }, 800);
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+// Local AI
+const aiReplies = [
+  "That's a great question! In formal writing, 'please find attached' is preferred over 'I'm sending you.' It sounds more professional in business contexts.",
+  "The phrase 'as per your request' is commonly used in professional emails. It acknowledges what the customer asked for before providing the information.",
+  "When writing to customers, use active voice whenever possible. Instead of 'The issue was investigated by our team,' write 'Our team investigated the issue.' It's clearer and more direct.",
+  "Great practice! Keep it up — consistent writing exercises are the fastest way to improve your professional English.",
+];
+let aiCount = 0;
+function sendAI() {
+  const input = document.getElementById('ai-input');
+  const box = document.getElementById('ai-box');
+  if (!input.value.trim()) return;
+  box.innerHTML += `<div class="msg user"><div class="msg-label">You</div><div class="msg-bubble">${input.value}</div></div>`;
+  input.value = '';
+  const reply = aiReplies[aiCount % aiReplies.length]; aiCount++;
+  setTimeout(() => {
+    box.innerHTML += `<div class="msg ai"><div class="msg-label">🤖 Local AI (Gemini)</div><div class="msg-bubble">${reply}</div></div>`;
+    box.scrollTop = box.scrollHeight;
+  }, 700);
+  box.scrollTop = box.scrollHeight;
+}
+
+// TTS
+let ttsUtterance = null;
+function startTTS() {
+  if (!('speechSynthesis' in window)) { showToast('Text-to-speech not supported in this browser.'); return; }
+  const text = "When responding to a customer reporting a failed posting, it is essential to begin with an acknowledgment of their concern. A professional response should always include three key elements: empathy, clarity, and a clear next step. Begin by confirming that you have received their report and that you understand the urgency of the situation. Then, request the minimum necessary information to begin your investigation. Finally, commit to a specific timeline for your follow-up. This builds trust and reduces anxiety for the customer while you work on a resolution.";
+  ttsUtterance = new SpeechSynthesisUtterance(text);
+  ttsUtterance.rate = 0.85;
+  ttsUtterance.pitch = 1;
+  const voices = speechSynthesis.getVoices();
+  const eng = voices.find(v => v.lang.startsWith('en') && v.localService);
+  if (eng) ttsUtterance.voice = eng;
+  ttsUtterance.onend = () => { document.getElementById('btn-play').style.display='flex'; document.getElementById('btn-stop').style.display='none'; document.getElementById('tts-status').textContent=''; };
+  speechSynthesis.speak(ttsUtterance);
+  document.getElementById('btn-play').style.display = 'none';
+  document.getElementById('btn-stop').style.display = 'inline-flex';
+  document.getElementById('tts-status').textContent = '🔊 Reading...';
+}
+function stopTTS() {
+  speechSynthesis.cancel();
+  document.getElementById('btn-play').style.display = 'flex';
+  document.getElementById('btn-stop').style.display = 'none';
+  document.getElementById('tts-status').textContent = '';
+}
+
+// Quiz
+const questions = [
+  { q: 'Choose the correct word: "I need to _____ this issue to the engineering team."', opts:['rise','escalate','raise up','elevate'], ans:1 },
+  { q: 'Which sentence is more professional?', opts:['I can\'t help you with that.','Unfortunately, that falls outside my current scope, but I\'ll connect you with the right team.','That\'s not my problem.','I don\'t know.'], ans:1 },
+  { q: 'Fill in the blank: "Please _____ the steps you followed before the error occurred."', opts:['describe','say','tell','speak'], ans:0 },
+  { q: 'What does "ETA" stand for in a support context?', opts:['Error Tracking Alert','Estimated Time of Arrival/Resolution','External Technical Analyst','End of Transaction Alert'], ans:1 },
+  { q: 'Which is the correct use of "cc" in an email?', opts:['Carbon Copy — sends a visible copy to another recipient','Close Conversation — marks the email as done','Customer Contact — adds the customer to the list','Cannot Confirm — indicates uncertainty'], ans:0 },
+];
+let qIdx = 0;
+function answer(btn, correct) {
+  document.querySelectorAll('.quiz-opt').forEach(b => b.disabled = true);
+  btn.classList.add(correct ? 'correct' : 'wrong');
+  if (!correct) {
+    document.querySelectorAll('.quiz-opt')[questions[qIdx].ans].classList.add('correct');
+  }
+  document.getElementById('quiz-next').style.display = 'block';
+}
+function nextQ() {
+  qIdx++;
+  if (qIdx >= questions.length) {
+    document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:3rem;margin-bottom:16px;">🎯</div><h2 style="font-weight:800;margin-bottom:8px;">Test Complete!</h2><p style="color:#64748b;margin-bottom:20px;">You scored <strong>4 out of 5</strong> — Level: <strong style="color:#4361ee;">B1 Intermediate</strong></p><button class="btn-primary" onclick="nav(\'learn\')">Continue Learning →</button></div>';
+    return;
+  }
+  const q = questions[qIdx];
+  document.getElementById('quiz-bar').style.width = ((qIdx+1)/5*100) + '%';
+  document.getElementById('quiz-counter').textContent = `Question ${qIdx+1} of 5`;
+  document.getElementById('quiz-q').textContent = q.q;
+  document.getElementById('quiz-opts').innerHTML = q.opts.map((o,i) => `<button class="quiz-opt" onclick="answer(this,${i===q.ans})">${String.fromCharCode(65+i)}) ${o}</button>`).join('');
+  document.getElementById('quiz-next').style.display = 'none';
+}
+</script>
+</body>
+</html>
